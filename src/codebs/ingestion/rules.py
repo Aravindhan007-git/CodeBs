@@ -71,6 +71,7 @@ UNKNOWN_LANGUAGE = "unknown"
 LANGUAGE_BY_FILENAME = {
     "Dockerfile": "dockerfile",
     "Makefile": "makefile",
+    "Pipfile": "toml",
 }
 
 LANGUAGE_BY_EXTENSION = {

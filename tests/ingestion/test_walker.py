@@ -187,3 +187,30 @@ def test_unreadable_directory_is_recorded_and_the_walk_continues(tmp_path, monke
     assert records["locked"].kind is EntryKind.DIRECTORY
     assert "locked/x.py" not in records
     assert records["ok.py"].status is EntryStatus.INCLUDED
+    
+
+def test_sensitive_takes_precedence_over_minified(tmp_path):
+    make_file(tmp_path, "id_rsa.min.js")
+
+    record = by_path(walk_repository(tmp_path))["id_rsa.min.js"]
+
+    assert record.skip_reason is SkipReason.SENSITIVE
+    
+    
+def test_pipfile_is_included_but_its_lockfile_is_skipped(tmp_path):
+    make_file(tmp_path, "Pipfile")
+    make_file(tmp_path, "Pipfile.lock")
+
+    records = by_path(walk_repository(tmp_path))
+
+    assert records["Pipfile"].status is EntryStatus.INCLUDED
+    assert records["Pipfile"].language == "toml"
+    assert records["Pipfile.lock"].skip_reason is SkipReason.LOCKFILE
+    
+    
+def test_empty_directory_returns_no_records(tmp_path):
+    result = walk_repository(tmp_path)
+
+    assert result.records == ()
+    assert result.included_count == 0
+    assert result.skipped_count == 0
