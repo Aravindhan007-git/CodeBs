@@ -40,6 +40,7 @@ def test_ordinary_names_are_not_sensitive(name):
         ("Makefile", "makefile"),
         ("data.weird", "unknown"),
         ("README", "unknown"),
+        ("Pipfile", "toml")
     ],
 )
 def test_language_detection(name, expected):
