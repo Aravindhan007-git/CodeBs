@@ -51,3 +51,25 @@ def test_excluded_directory_names_include_extras():
     assert rules.is_excluded_directory_name("node_modules", frozenset())
     assert rules.is_excluded_directory_name("vendor", frozenset({"vendor"}))
     assert not rules.is_excluded_directory_name("src", frozenset())
+    
+@pytest.mark.parametrize(
+    "name",
+    ["logo.png", "Archive.ZIP", "lib.so", "font.woff2", "app.pyc", "data.sqlite"],
+)
+def test_binary_extensions_are_detected(name):
+    assert rules.is_binary_extension(name)
+
+
+@pytest.mark.parametrize("name", ["main.py", "icon.svg", "notes.txt"])
+def test_text_extensions_are_not_binary(name):
+    assert not rules.is_binary_extension(name)
+
+
+def test_nul_byte_means_binary():
+    assert rules.looks_binary(b"abc\x00def")
+
+
+def test_plain_text_is_not_binary():
+    assert not rules.looks_binary(b"")
+    assert not rules.looks_binary("héllo".encode())
+    assert not rules.looks_binary(b"line one\nline two\n")

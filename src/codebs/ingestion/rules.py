@@ -66,6 +66,64 @@ LOCKFILE_NAMES = frozenset(
 
 MINIFIED_NAME_PATTERNS = ("*.min.js", "*.min.css", "*.map")
 
+BINARY_EXTENSIONS = frozenset(
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".ico",
+        ".webp",
+        ".tiff",
+        ".pdf",
+        ".zip",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".xz",
+        ".7z",
+        ".rar",
+        ".jar",
+        ".war",
+        ".whl",
+        ".egg",
+        ".exe",
+        ".dll",
+        ".so",
+        ".dylib",
+        ".o",
+        ".obj",
+        ".a",
+        ".lib",
+        ".class",
+        ".pyc",
+        ".pyo",
+        ".pyd",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".otf",
+        ".eot",
+        ".mp3",
+        ".mp4",
+        ".wav",
+        ".ogg",
+        ".mov",
+        ".avi",
+        ".mkv",
+        ".webm",
+        ".flac",
+        ".db",
+        ".sqlite",
+        ".sqlite3",
+        ".bin",
+        ".iso",
+        ".dmg",
+        ".psd",
+    }
+)
+
 UNKNOWN_LANGUAGE = "unknown"
 
 LANGUAGE_BY_FILENAME = {
@@ -127,6 +185,13 @@ def is_lockfile_name(name: str) -> bool:
 def is_minified_name(name: str) -> bool:
     lowered = name.lower()
     return any(fnmatchcase(lowered, pattern) for pattern in MINIFIED_NAME_PATTERNS)
+
+def is_binary_extension(name: str) -> bool:
+    return PurePosixPath(name).suffix.lower() in BINARY_EXTENSIONS
+
+
+def looks_binary(head: bytes) -> bool:
+    return b"\x00" in head
 
 
 def detect_language(name: str) -> str:

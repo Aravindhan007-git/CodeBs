@@ -214,3 +214,94 @@ def test_empty_directory_returns_no_records(tmp_path):
     assert result.records == ()
     assert result.included_count == 0
     assert result.skipped_count == 0
+    
+def make_bytes(root: Path, relative: str, content: bytes) -> None:
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content)
+
+
+def file_name(target: object) -> str:
+    return Path(target).name if isinstance(target, (str, os.PathLike)) else ""
+
+def test_file_over_the_limit_is_skipped_with_its_size(tmp_path):
+    make_bytes(tmp_path, "big.py", b"x" * 11)
+    config = WalkConfig(max_file_size_bytes=10)
+
+    record = by_path(walk_repository(tmp_path, config))["big.py"]
+
+    assert record.skip_reason is SkipReason.TOO_LARGE
+    assert record.size_bytes == 11
+    assert record.language is None
+
+
+def test_file_exactly_at_the_limit_is_included(tmp_path):
+    make_bytes(tmp_path, "edge.py", b"x" * 10)
+    config = WalkConfig(max_file_size_bytes=10)
+
+    record = by_path(walk_repository(tmp_path, config))["edge.py"]
+
+    assert record.status is EntryStatus.INCLUDED
+
+
+def test_binary_extension_is_skipped_by_name(tmp_path):
+    make_bytes(tmp_path, "logo.png", b"not really an image")
+
+    record = by_path(walk_repository(tmp_path))["logo.png"]
+
+    assert record.skip_reason is SkipReason.BINARY
+
+
+def test_file_with_a_nul_byte_is_skipped_as_binary(tmp_path):
+    make_bytes(tmp_path, "data.weird", b"ab\x00cd")
+
+    record = by_path(walk_repository(tmp_path))["data.weird"]
+
+    assert record.skip_reason is SkipReason.BINARY
+    assert record.size_bytes == 5
+
+
+def test_nul_byte_beyond_the_sniff_window_is_not_detected(tmp_path):
+    make_bytes(tmp_path, "late.weird", b"abcd\x00")
+    config = WalkConfig(binary_sniff_bytes=4)
+
+    record = by_path(walk_repository(tmp_path, config))["late.weird"]
+
+    assert record.status is EntryStatus.INCLUDED
+
+
+def test_sensitive_files_are_never_opened(tmp_path, monkeypatch):
+    make_file(tmp_path, ".env", "SECRET=1")
+    make_file(tmp_path, "app.py", "x = 1")
+    opened: list[str] = []
+    real_open = open
+
+    def spy_open(target, *args, **kwargs):
+        opened.append(file_name(target))
+        return real_open(target, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", spy_open)
+
+    walk_repository(tmp_path)
+
+    assert "app.py" in opened
+    assert ".env" not in opened
+
+
+def test_unreadable_file_is_recorded_and_the_walk_continues(tmp_path, monkeypatch):
+    make_file(tmp_path, "locked.py")
+    make_file(tmp_path, "ok.py")
+    real_open = open
+
+    def fake_open(target, *args, **kwargs):
+        if file_name(target) == "locked.py":
+            raise PermissionError("denied")
+        return real_open(target, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", fake_open)
+
+    records = by_path(walk_repository(tmp_path))
+
+    assert records["locked.py"].skip_reason is SkipReason.UNREADABLE
+    assert records["locked.py"].size_bytes == 1
+    assert records["ok.py"].status is EntryStatus.INCLUDED
