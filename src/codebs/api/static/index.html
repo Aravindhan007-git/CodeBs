@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CodeBs: ask questions about a codebase</title>
+  <meta name="description" content="CodeBs is an AI assistant that answers questions about a software repository, grounded in its actual code.">
+  <style>
+    :root {
+      --bg: #d7ddd8;
+      --card: #ffffff;
+      --text: #1d1d1f;
+      --muted: #5f6368;
+      --border: #dcdcd6;
+      --accent: #2f5bea;
+      --ok: #1a7f37;
+      --bad: #b42318;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #5c6b7f;
+        --card: #1b1d20;
+        --text: #ececec;
+        --muted: #a0a4ab;
+        --border: #2e3136;
+        --accent: #305af2;
+        --ok: #4ade80;
+        --bad: #f87171;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    main { max-width: 42rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+    h1 { font-size: 2.2rem; margin: 0 0 0.25rem; }
+    h2 { font-size: 1.1rem; margin: 2rem 0 0.5rem; }
+    .tagline { color: var(--muted); font-size: 1.1rem; margin: 0 0 1.5rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+    }
+    ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+    a { color: var(--accent); }
+    #status.ok { color: var(--ok); font-weight: 600; }
+    #status.bad { color: var(--bad); font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>CodeBs</h1>
+    <p class="tagline">An AI assistant that answers questions about a software repository, grounded in its actual code.</p>
+
+    <div class="card">
+      <strong>Live service status:</strong>
+      <span id="status">Checking…</span>
+    </div>
+
+    <h2>What it will do</h2>
+    <p>Upload a repository, ask something like “Which files handle authentication?”, and get an answer built from the real source files, with references to where it came from.</p>
+
+    <h2>Where the project stands</h2>
+    <p>This is a learning project, built in the open one piece at a time. It is not the assistant yet.</p>
+    <div class="card">
+      <strong>Done</strong>
+      <ul>
+        <li>Tested FastAPI service with automated checks on every change</li>
+        <li>Docker image published and deployed automatically</li>
+        <li>Repository walker: decides which files count as source code</li>
+      </ul>
+      <strong>Next</strong>
+      <ul>
+        <li>Respecting a repository’s own ignore rules</li>
+        <li>Uploading a repository</li>
+        <li>Splitting code into chunks, embeddings and retrieval</li>
+        <li>Answers grounded in the retrieved code</li>
+      </ul>
+    </div>
+
+    <h2>Explore</h2>
+    <ul>
+      <li><a href="/docs">Interactive API documentation</a></li>
+      <li><a href="/health">Health check (JSON)</a></li>
+      <li><a href="https://github.com/Aravindhan007-git/CodeBs">Source code on GitHub</a></li>
+    </ul>
+
+    <footer>Runs on a free instance, so the first visit after a quiet period can take up to a minute to wake it up.</footer>
+  </main>
+
+  <script>
+    (function () {
+      var out = document.getElementById("status");
+      fetch("/health")
+        .then(function (response) {
+          if (!response.ok) { throw new Error("HTTP " + response.status); }
+          return response.json();
+        })
+        .then(function (data) {
+          out.textContent = "Online · version " + data.app_version + " · " + data.environment;
+          out.className = "ok";
+        })
+        .catch(function () {
+          out.textContent = "Status unavailable";
+          out.className = "bad";
+        });
+    })();
+  </script>
+</body>
+</html>
